@@ -2,10 +2,13 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"internal/pokeapi"
+	"internal/pokecache"
 	"os"
 	"strings"
+	"time"
 )
 
 type cliCommand struct {
@@ -21,6 +24,7 @@ type config struct {
 
 var commands map[string]cliCommand
 var location config
+var cache *pokecache.Cache
 
 func init() {
 	commands = map[string]cliCommand{
@@ -47,9 +51,11 @@ func init() {
 	}
 
 	location = config{
-		Next:     "https://pokeapi.co/api/v2/location-area/",
+		Next:     "https://pokeapi.co/api/v2/location-area/?offset=0&limit=20",
 		Previous: nil,
 	}
+
+	cache = pokecache.NewCache(time.Second * 7)
 }
 
 func main() {
@@ -90,10 +96,23 @@ func commandHelp(c *config) error {
 }
 
 func commandMap(c *config) error {
-	params, err := pokeapi.GetLocationAreas(c.Next)
-	if err != nil {
-		return err
+	params := pokeapi.PokeMap{}
+	val, ok := cache.Get(c.Next)
+	if ok {
+		err := json.Unmarshal(val, &params)
+		if err != nil {
+			return err
+		}
+	} else {
+		p, err := pokeapi.GetLocationAreas(c.Next)
+		if err != nil {
+			return err
+		}
+		params = p
+		jsonData, _ := json.Marshal(params)
+		cache.Add(c.Next, jsonData)
 	}
+	fmt.Println(params.Next)
 	c.Next = params.Next
 	c.Previous = params.Previous
 	for _, r := range params.Results {
@@ -107,9 +126,21 @@ func commandMapb(c *config) error {
 		fmt.Println("you're on the first page")
 		return nil
 	}
-	params, err := pokeapi.GetLocationAreas(*c.Previous)
-	if err != nil {
-		return err
+	params := pokeapi.PokeMap{}
+	val, ok := cache.Get(*c.Previous)
+	if ok {
+		err := json.Unmarshal(val, &params)
+		if err != nil {
+			return err
+		}
+	} else {
+		p, err := pokeapi.GetLocationAreas(*c.Previous)
+		if err != nil {
+			return err
+		}
+		params = p
+		jsonData, _ := json.Marshal(params)
+		cache.Add(*c.Previous, jsonData)
 	}
 	c.Next = params.Next
 	c.Previous = params.Previous

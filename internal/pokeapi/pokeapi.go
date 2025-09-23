@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-type pokeMap struct {
+type PokeMap struct {
 	Count    int     `json:"count"`
 	Next     string  `json:"next"`
 	Previous *string `json:"previous"`
@@ -17,10 +17,10 @@ type pokeMap struct {
 	} `json:"results"`
 }
 
-func GetLocationAreas(url string) (pokeMap, error) {
+func GetLocationAreas(url string) (PokeMap, error) {
 	res, err := http.Get(url)
 	if err != nil {
-		return pokeMap{}, err
+		return PokeMap{}, err
 	}
 	body, err := io.ReadAll(res.Body)
 	res.Body.Close()
@@ -28,12 +28,12 @@ func GetLocationAreas(url string) (pokeMap, error) {
 		log.Fatalf("Response failed with status code: %d and\nbody: %s\n", res.StatusCode, body)
 	}
 	if err != nil {
-		return pokeMap{}, err
+		return PokeMap{}, err
 	}
-	params := pokeMap{}
+	params := PokeMap{}
 	err = json.Unmarshal(body, &params)
 	if err != nil {
-		return pokeMap{}, err
+		return PokeMap{}, err
 	}
 	return params, nil
 }
