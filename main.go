@@ -112,35 +112,28 @@ func commandHelp(c *config, input string) error {
 	return nil
 }
 
-func commandMap(c *config, input string) error {
-	return getAndDisplayLocationAreas(c, c.Next)
-}
-
-func commandMapb(c *config, input string) error {
-	if c.Previous == nil {
-		fmt.Println("you're on the first page")
-		return nil
-	}
-	return getAndDisplayLocationAreas(c, *c.Previous)
-}
-
-func getAndDisplayLocationAreas(c *config, url string) error {
-	params := pokeapi.PokeMap{}
+func getData[T any](url string) (T, error) {
+	var params T
 	val, ok := cache.Get(url)
 	if ok {
 		err := json.Unmarshal(val, &params)
 		if err != nil {
-			return err
+			return params, err
 		}
 	} else {
-		p, err := pokeapi.Get[pokeapi.PokeMap](url)
+		p, err := pokeapi.Get[T](url)
 		if err != nil {
-			return err
+			return params, err
 		}
 		params = p
 		jsonData, _ := json.Marshal(params)
 		cache.Add(url, jsonData)
 	}
+	return params, nil
+}
+
+func displayLocationAreas(c *config, url string) error {
+	params, _ := getData[pokeapi.PokeMap](url)
 	c.Next = params.Next
 	c.Previous = params.Previous
 	for _, r := range params.Results {
@@ -149,29 +142,25 @@ func getAndDisplayLocationAreas(c *config, url string) error {
 	return nil
 }
 
+func commandMap(c *config, input string) error {
+	return displayLocationAreas(c, c.Next)
+}
+
+func commandMapb(c *config, input string) error {
+	if c.Previous == nil {
+		fmt.Println("you're on the first page")
+		return nil
+	}
+	return displayLocationAreas(c, *c.Previous)
+}
+
 func commandExplore(c *config, input string) error {
 	if input == "" {
 		return nil
 	}
 	url := baseURL + input
 	fmt.Printf("Exploring %s...\n", input)
-	params := pokeapi.LocationAreaPokemon{}
-	val, ok := cache.Get(url)
-	if ok {
-		err := json.Unmarshal(val, &params)
-		if err != nil {
-			return err
-		}
-	} else {
-		p, err := pokeapi.Get[pokeapi.LocationAreaPokemon](url)
-		if err != nil {
-			fmt.Println("Problem with finding location area. Please make sure that it is spelled correctly.")
-			return err
-		}
-		params = p
-		jsonData, _ := json.Marshal(params)
-		cache.Add(url, jsonData)
-	}
+	params, _ := getData[pokeapi.LocationAreaPokemon](url)
 	fmt.Println("Found Pokemon:")
 	for _, pokemon := range params.PokemonEncounters {
 		fmt.Printf("- %s\n", pokemon.Pokemon.Name)
