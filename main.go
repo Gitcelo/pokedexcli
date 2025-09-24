@@ -96,29 +96,7 @@ func commandHelp(c *config) error {
 }
 
 func commandMap(c *config) error {
-	params := pokeapi.PokeMap{}
-	val, ok := cache.Get(c.Next)
-	if ok {
-		err := json.Unmarshal(val, &params)
-		if err != nil {
-			return err
-		}
-	} else {
-		p, err := pokeapi.GetLocationAreas(c.Next)
-		if err != nil {
-			return err
-		}
-		params = p
-		jsonData, _ := json.Marshal(params)
-		cache.Add(c.Next, jsonData)
-	}
-	fmt.Println(params.Next)
-	c.Next = params.Next
-	c.Previous = params.Previous
-	for _, r := range params.Results {
-		fmt.Println(r.Name)
-	}
-	return nil
+	return getAndDisplayLocationAreas(c, c.Next)
 }
 
 func commandMapb(c *config) error {
@@ -126,21 +104,25 @@ func commandMapb(c *config) error {
 		fmt.Println("you're on the first page")
 		return nil
 	}
+	return getAndDisplayLocationAreas(c, *c.Previous)
+}
+
+func getAndDisplayLocationAreas(c *config, url string) error {
 	params := pokeapi.PokeMap{}
-	val, ok := cache.Get(*c.Previous)
+	val, ok := cache.Get(url)
 	if ok {
 		err := json.Unmarshal(val, &params)
 		if err != nil {
 			return err
 		}
 	} else {
-		p, err := pokeapi.GetLocationAreas(*c.Previous)
+		p, err := pokeapi.GetLocationAreas(url)
 		if err != nil {
 			return err
 		}
 		params = p
 		jsonData, _ := json.Marshal(params)
-		cache.Add(*c.Previous, jsonData)
+		cache.Add(url, jsonData)
 	}
 	c.Next = params.Next
 	c.Previous = params.Previous
