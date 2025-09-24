@@ -19,6 +19,7 @@ func NewCache(interval time.Duration) *Cache {
 	c := Cache{
 		cache: make(map[string]cacheEntry),
 	}
+	// Start reapLoop in a goroutine (basically a separate thread)
 	go c.reapLoop(interval)
 	return &c
 }
