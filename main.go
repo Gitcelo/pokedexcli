@@ -26,8 +26,10 @@ type config struct {
 var commands map[string]cliCommand
 var location config
 var cache *pokecache.Cache
-var locationAreaURL string
-var pokemonURL string
+
+const locationAreaURL = "https://pokeapi.co/api/v2/location-area/"
+const pokemonURL = "https://pokeapi.co/api/v2/pokemon/"
+
 var pokemon map[string]pokeapi.Pokemon
 
 func init() {
@@ -62,10 +64,12 @@ func init() {
 			description: "Allows user to try to catch a pokemon",
 			callback:    commandCatch,
 		},
+		"inspect": {
+			name:        "inspect",
+			description: "Allows user to see details about a caught pokemon",
+			callback:    commandInspect,
+		},
 	}
-
-	locationAreaURL = "https://pokeapi.co/api/v2/location-area/"
-	pokemonURL = "https://pokeapi.co/api/v2/pokemon/"
 	location = config{
 		Next:     locationAreaURL + "?offset=0&limit=20",
 		Previous: nil,
@@ -197,5 +201,31 @@ func commandCatch(c *config, input string) error {
 	} else {
 		fmt.Printf("%s escaped!\n", input)
 	}
+	return nil
+}
+
+func commandInspect(c *config, input string) error {
+	if input == "" {
+		return nil
+	}
+	monster, ok := pokemon[input]
+	if !ok {
+		return fmt.Errorf("you have not caught that pokemon")
+	}
+	fmt.Printf("Name: %v\n", monster.Name)
+	fmt.Printf("Height: %v\n", monster.Height)
+	fmt.Printf("Weight: %v\n", monster.Weight)
+	fmt.Println("Stats:")
+
+	for _, stat := range monster.Stats {
+		fmt.Printf("  - %v: %v\n", stat.Stat.Name, stat.BaseStat)
+	}
+
+	fmt.Println("Types:")
+
+	for _, t := range monster.Types {
+		fmt.Printf("  - %v\n", t.Type.Name)
+	}
+
 	return nil
 }
