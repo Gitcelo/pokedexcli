@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"internal/pokeapi"
@@ -10,6 +9,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/chzyer/readline"
 )
 
 type cliCommand struct {
@@ -85,25 +86,30 @@ func init() {
 }
 
 func main() {
-	scanner := bufio.NewScanner(os.Stdin)
+	rl, err := readline.New("Pokedex>")
+	if err != nil {
+		panic(err)
+	}
+	defer rl.Close()
 	for {
-		fmt.Print("Pokedex > ")
-		if scanner.Scan() {
-			params := cleanInput(scanner.Text())
-			cmd := params[0]
-			param_1 := ""
-			if len(params) >= 2 {
-				param_1 = params[1]
+		line, err := rl.Readline()
+		if err != nil {
+			break
+		}
+		params := cleanInput(line)
+		cmd := params[0]
+		param_1 := ""
+		if len(params) >= 2 {
+			param_1 = params[1]
+		}
+		val, ok := commands[cmd]
+		if ok {
+			err := val.callback(&location, param_1)
+			if err != nil {
+				fmt.Println(err)
 			}
-			val, ok := commands[cmd]
-			if ok {
-				err := val.callback(&location, param_1)
-				if err != nil {
-					fmt.Println(err)
-				}
-			} else {
-				fmt.Println("Unknown command")
-			}
+		} else {
+			fmt.Println("Unknown command")
 		}
 	}
 }
