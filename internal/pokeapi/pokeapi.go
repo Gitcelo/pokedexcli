@@ -25,6 +25,10 @@ type LocationAreaPokemon struct {
 	} `json:"pokemon_encounters"`
 }
 
+type Pokemon struct {
+	BaseExperience int `json:"base_experience"`
+}
+
 func Get[T any](url string) (T, error) {
 	var result T
 	res, err := http.Get(url)

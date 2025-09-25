@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"internal/pokeapi"
 	"internal/pokecache"
+	"math/rand"
 	"os"
 	"strings"
 	"time"
@@ -25,7 +26,9 @@ type config struct {
 var commands map[string]cliCommand
 var location config
 var cache *pokecache.Cache
-var baseURL string
+var locationAreaURL string
+var pokemonURL string
+var pokemon map[string]pokeapi.Pokemon
 
 func init() {
 	commands = map[string]cliCommand{
@@ -61,13 +64,15 @@ func init() {
 		},
 	}
 
-	baseURL = "https://pokeapi.co/api/v2/location-area/"
+	locationAreaURL = "https://pokeapi.co/api/v2/location-area/"
+	pokemonURL = "https://pokeapi.co/api/v2/pokemon/"
 	location = config{
-		Next:     baseURL + "?offset=0&limit=20",
+		Next:     locationAreaURL + "?offset=0&limit=20",
 		Previous: nil,
 	}
 
 	cache = pokecache.NewCache(time.Second * 7)
+	pokemon = map[string]pokeapi.Pokemon{}
 }
 
 func main() {
@@ -158,7 +163,7 @@ func commandExplore(c *config, input string) error {
 	if input == "" {
 		return nil
 	}
-	url := baseURL + input
+	url := locationAreaURL + input
 	fmt.Printf("Exploring %s...\n", input)
 	params, _ := getData[pokeapi.LocationAreaPokemon](url)
 	fmt.Println("Found Pokemon:")
@@ -172,6 +177,25 @@ func commandCatch(c *config, input string) error {
 	if input == "" {
 		return nil
 	}
+	url := pokemonURL + input
+	params, err := getData[pokeapi.Pokemon](url)
+	if err != nil {
+		return fmt.Errorf("pokemon %s not found", input)
+	}
 	fmt.Printf("Throwing a Pokeball at %s...\n", input)
+	const maxExp = 300
+	chance := 1 - (float64(params.BaseExperience) / maxExp)
+	if chance < 0.05 {
+		chance = 0.05
+	}
+	if chance > 0.95 {
+		chance = 0.95
+	}
+	if rand.Float64() < chance {
+		fmt.Printf("%s was caught!\n", input)
+		pokemon[input] = params
+	} else {
+		fmt.Printf("%s escaped!\n", input)
+	}
 	return nil
 }
