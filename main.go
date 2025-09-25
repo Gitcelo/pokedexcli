@@ -69,6 +69,11 @@ func init() {
 			description: "Allows user to see details about a caught pokemon",
 			callback:    commandInspect,
 		},
+		"pokedex": {
+			name:        "pokedex",
+			description: "Prints a list of all the names of the pokemon the user has caught",
+			callback:    commandPokedex,
+		},
 	}
 	location = config{
 		Next:     locationAreaURL + "?offset=0&limit=20",
@@ -197,6 +202,7 @@ func commandCatch(c *config, input string) error {
 	}
 	if rand.Float64() < chance {
 		fmt.Printf("%s was caught!\n", input)
+		fmt.Println("You may now inspect it with the inspect command.")
 		pokemon[input] = params
 	} else {
 		fmt.Printf("%s escaped!\n", input)
@@ -226,6 +232,13 @@ func commandInspect(c *config, input string) error {
 	for _, t := range monster.Types {
 		fmt.Printf("  - %v\n", t.Type.Name)
 	}
+	return nil
+}
 
+func commandPokedex(c *config, input string) error {
+	fmt.Println("Your Pokedex:")
+	for _, monster := range pokemon {
+		fmt.Printf("  - %s\n", monster.Name)
+	}
 	return nil
 }
